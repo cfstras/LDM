@@ -1,0 +1,33 @@
+sudo: required
+services:
+- docker
+before_install:
+- docker build -t compiler docker
+install:
+- mkdir -p m4
+- |
+  docker run -i --rm -v $(pwd):/root/LDM -w /root/LDM compiler bash -ec '
+    autoreconf -f -i
+    ./configure --disable-root-actions  --disable-static --with-noaaport --with-gribinsert |& tee configure.log
+    make rpm
+  '
+- ls *.rpm
+
+script:
+- docker run -i --rm -v $(pwd):/root/LDM -w /root/LDM compiler bash -ec 'make'
+- docker run -i --rm -v $(pwd):/root/LDM -w /root/LDM compiler bash -ec 'make check'
+- docker run -i --rm -v $(pwd):/root/LDM -w /root/LDM compiler bash -ec 'make distcheck'
+- ls *.rpm *.tar.gz
+
+deploy:
+  provider: releases
+  api_key:
+    secure: fzELvg/juPcjJznrZbx7dTSRh2RsTSOF8arMSDgsDIBtqWGd0Eb5zaqVOQi4O0iQJ3nshU7PoSZyDOMtufDxWccI8hZ7px4cl5qI0pxx1CRCELn0Xc8fGE6pIYpUDmpBU/m1g8dOqks1Sz1SawP3jhTOrKZi5utH4fCATwOXB5Tprd4feHq+mJE2JOr5dzLWROCKDnY2YOKWRqTOSSiUSzFgZDermAG3hdceR4XkUfrsMFMeOaFKhamOWrmEspxuz9jw1tUOm1HchcYzyfNCeBEwQQrdH5aIm7DhFlBQy0TsSnSrqNDihlNHc9O5GXL3iaBNtiGqGXwLI8JLkl117Uy0vkRJX5QRf0ElnlOgUdOLHEz1pPqYz5eb6dDRRn6UpkOrhTtQKO+CgVBnjJsg4xHUl/sW3kHPSIGW4Mxa2UxFUkI8rdWUclhGB4nv3cz9jZHNuC/XRF7sJSlcRgHpGWafE9z2T/3VM294rN103vxYmdH055NUizI5RKFbT7XQAVae4NWcOF7SrcqWG1m2ZQ4T7eEz3upZ77yt4i/jy8I/P6LKx9sHpY4DUWhk7ZvB8kPB48vl9WMUk2KMTm2sGxxMi9M36YsQl6lMWY4QNLRgSRkmH9uv/RclVNZNFna45uAs/mlcDPO0KU2gCeRf7uTHThs51Z99KEN0yAKCuko=
+  file_glob: true
+  file:
+  - ldm-*.rpm
+  - ldm-*.tar.gz
+  skip_cleanup: true
+  on:
+    repo: cfstras/LDM
+    tags: true
